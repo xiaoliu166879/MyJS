@@ -26,20 +26,43 @@
     monitorButton.id = 'monitorToggle';
     document.body.appendChild(monitorButton);
 
-    GM_addStyle(`
-        #monitorToggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    `);
+// 添加样式函数的兼容性实现
+function addStyle(css) {
+    if (typeof GM_addStyle !== "undefined") {
+        GM_addStyle(css)      // 兼容Tampermonkey (Chrome)
+    } else if (typeof GM !== "undefined" && GM.addStyle) {
+        GM.addStyle(css)     // 兼容Greasemonkey V4+ (Firefox)
+    } else {
+        // 降级方案：原生DOM方法（通用）
+        const style = document.createElement('style');
+        style.textContent = css;
+        (document.head || document.documentElement).appendChild(style);
+    }
+}
+
+// 使用新函数添加样式
+addStyle(`
+    #monitorToggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: Arial, sans-serif;   /* 增加字体定义 */
+        font-size: 14px;                 /* 增加字体大小 */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2); /* 添加阴影提升效果 */
+        transition: all 0.3s ease;        /* 添加悬停动画 */
+    }
+    #monitorToggle:hover {
+        background-color: #3d8b40;        /* 悬停颜色加深 */
+        transform: translateY(-2px);      /* 轻微上浮效果 */
+    }
+`);
 
     monitorButton.addEventListener('click', () => {
         if (intervalId) {
@@ -116,12 +139,12 @@
                         console.log('[监控] 过滤后数据:', filteredData);
 
                         const timestamp = Date.now();
-                        const apiPayload = filteredData.map(({ owner_name, owner_id, today_total_cost }) => ({
-                            kname: owner_name || '',
-                            kownerid: String(owner_id),
-                            todayconsume: today_total_cost || '0',
-                            ts: timestamp
-                        }));
+                const apiPayload = filteredData.map(({ owner_name, owner_id, today_total_cost }) => ({
+    kname: owner_name || '',
+    kownerid: String(owner_id),
+    todayconsume: (Math.round(Number(today_total_cost || 0)) / 100).toFixed(2),
+    ts: timestamp
+}));
 
                         GM_xmlhttpRequest({
                             method: 'POST',
